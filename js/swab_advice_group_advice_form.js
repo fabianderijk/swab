@@ -17,17 +17,21 @@
       $('#swab-advice-group-add-advice-form #edit-submit').unbind('click');
       $('#swab-advice-group-add-advice-form #edit-submit').bind('click', function() {
         var button = $(this);
-        // button.attr('disabled', 'disabled');
+        button.attr('disabled', 'disabled');
         var url = settings.basePath + 'ajax/swab_put_advice_rows';
         var data = swabAdviceGroupGetAdviceData();
-        $.ajax({
+        var ajaxCall = $.ajax({
           url: url,
           type: 'POST',
           data: data,
-          success: function() {
-            console.log('yahoo!');
+          dataType: 'JSON',
+          success: function(data) {
+            if (data.success == 'true' && isInIframe()) {
+              parent.Drupal.ReferencesDialog.close(null, 0, null);
+              ajaxCall.abort();
+            }
           }
-        })
+        });
         return false;
       }, context);
     }
@@ -42,6 +46,10 @@
       data[el.attr('name')] = el.val();
     });
     return data;
+  }
+
+  function isInIframe() {
+    return (window.location != window.parent.location) ? true : false;
   }
 
 })(jQuery);

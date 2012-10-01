@@ -133,14 +133,14 @@ function swab_advice_group_add_advice_form_submit() {
   if (isset($_POST)) {
     global $language;
     global $user;
-
+    $advices = array();
     foreach ($_POST['advices'] AS $nid => $adv) {
       if (is_numeric($nid)) { // existing advice
         $n = node_load($nid);
         $n = _swab_advice_group_update_field($n, 'field_advc_age_ref', $n->language, 'nid', $adv['adv_age']);
         $n = _swab_advice_group_update_field($n, 'field_advc_weight_ref', $n->language, 'nid', $adv['adv_weight']);
       }
-      else { // new advice
+      elseif ($adv['adv_age'] != '_none' && $adv['adv_weight'] != '_none') { // new advice
         $n = new stdClass();
         $n->nid = NULL;
         $n->type = 'advice';
@@ -151,23 +151,28 @@ function swab_advice_group_add_advice_form_submit() {
         $n = _swab_advice_group_update_field($n, 'field_advc_weight_ref', $language->language, 'nid', $adv['adv_weight']);
       }
       node_save($n);
+      $advices[] = $n->nid;
     }
   }
+  $_SESSION[SWAB_ADVICE_GROUP_SESSION] = $advices;
+  print json_encode(array('success' => 'true'));
   exit();
 }
 
 function _swab_advice_group_update_field($n, $field, $lang, $fieldname, $value) {
-  if (!empty($node->{$field})) {
-    $n->{$field}[$lang][0][$fieldname] = $value;
-  }
-  else {
-    $n->{$field} = array(
-      $lang => array(
-        array(
-          $fieldname => $value,
+  if ($value != '_none') {
+    if (!empty($node->{$field})) {
+      $n->{$field}[$lang][0][$fieldname] = $value;
+    }
+    else {
+      $n->{$field} = array(
+        $lang => array(
+          array(
+            $fieldname => $value,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
   return $n;
 }
