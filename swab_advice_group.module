@@ -1,0 +1,166 @@
+<?php
+
+define('SWAB_ADVICE_GROUP_DEBUG', TRUE);
+define('SWAB_ADVICE_GROUP_SESSION', 'swab_advice_group');
+define('SWAB_ADVICE_GROUP_ADVICE_PATH', 'admin/config/system/swab/add-edit-advices');
+
+/**
+ * Implements hook_init().
+ */
+function swab_advice_group_init() {
+  if (SWAB_ADVICE_GROUP_DEBUG) {
+    $_SESSION[SWAB_ADVICE_GROUP_SESSION] = array(423, 430, 427, 426, 1000);
+  }
+}
+/**
+ * Implements hook_menu().
+ */
+function swab_advice_group_menu() {
+  $items = array();
+  $items['ajax/swab_get_advice'] = array(
+    'title' => 'Ajax callback',
+    'page callback' => 'swab_advice_group_get_advice',
+    'access arguments' => array('swab advice group'),
+  );
+  $items['ajax/swab_get_advice_row'] = array(
+    'title' => 'Ajax callback',
+    'page callback' => 'swab_advice_group_add_advice_form_row',
+    'access arguments' => array('swab advice group'),
+    'file' => 'swab_advice_group_forms.inc',
+    'type' => MENU_CALLBACK,
+  );
+  $items['ajax/swab_put_advice_rows'] = array(
+    'title' => 'Ajax callback',
+    'page callback' => 'swab_advice_group_add_advice_form_submit',
+    'access arguments' => array('swab advice group'),
+    'file' => 'swab_advice_group_forms.inc',
+    'type' => MENU_CALLBACK,
+  );
+  $items[SWAB_ADVICE_GROUP_ADVICE_PATH] = array(
+    'title' => 'Add, edit or re-order advices',
+    'description' => 'Use this page to change or add advices to the advice group.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('swab_advice_group_add_advice_form'),
+    'access arguments' => array('swab advice group'),
+    'file' => 'swab_advice_group_forms.inc',
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function swab_advice_group_permission() {
+  return array(
+    'swab advice group' => array(
+      'title' => t('Administer advice groups'),
+      'description' => t('Create and administer advice groups.'),
+    ),
+  );
+}
+/**
+ * Implements hook_form_alter().
+ */
+function swab_advice_group_form_alter(&$form, &$form_state, $form_id) {
+  switch ($form_id) {
+    case 'advice_group_node_form':
+      $form = swab_advice_group_change_form($form);
+      break;
+  }
+}
+
+function swab_advice_group_change_form($form) {
+  swab_advice_group_include_references();
+  drupal_add_js(drupal_get_path('module', 'swab_advice_group') . '/js/swab_advice_group.js');
+
+  if (!SWAB_ADVICE_GROUP_DEBUG) {
+    $form['field_advcg_advc']['#access'] = FALSE;
+  }
+  $form['advices'] = array(
+    '#type' => 'fieldset',
+    '#title' => check_plain($form['field_advcg_advc']['und']['#title']),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#weight' => $form['field_advcg_advc']['#weight'],
+    '#description' => check_plain($form['field_advcg_advc']['und']['#description']),
+  );
+  $form['advices']['table'] = array(
+    '#markup' => swab_advice_group_get_advice_table(),
+  );
+  $form['advices']['add_link'] = array(
+    '#markup' => l(t('Create, edit or re-order advices'), SWAB_ADVICE_GROUP_ADVICE_PATH, array('attributes' => array('class' => 'add-advice-dialog'))),
+  );
+  $form['#submit'][] = 'swab_advice_group_submit';
+  return $form;
+}
+
+function swab_advice_group_submit($form, &$form_state) {
+  // var_dump($form_state);
+  // exit();
+}
+
+function swab_advice_group_theme() {
+  return array(
+    'swab_advice_group_add_advice_form' => array(
+      'render element' => 'form',
+      'file' => 'swab_advice_group_forms.inc',
+    ),
+  );
+}
+
+function swab_advice_group_include_references() {
+  $reference_includes = references_dialog_attached();
+  foreach ($reference_includes['js'] AS $js) {
+    drupal_add_js($js);
+  }
+  foreach ($reference_includes['css'] AS $css) {
+    drupal_add_css($css);
+  }
+}
+
+function swab_advice_group_get_advice_table() {
+  $header = array(t('Patient Age'), t('Patient Weight'), t('Indications'), t('Remarks'), t('Dosage Schema'), t('Score'));
+  $rows = array();
+
+  foreach ($_SESSION[SWAB_ADVICE_GROUP_SESSION] AS $advice) {
+    $n = node_load($advice);
+    if (!empty($n)) {
+      $age = '-';
+      if (!empty($n->field_advc_age_ref)) {
+        $temp = node_load($n->field_advc_age_ref['und'][0]['nid']);
+        $age = $temp->title;
+      }
+      $weight = '-';
+      if (!empty($n->field_advc_weight_ref)) {
+        $temp = node_load($n->field_advc_weight_ref['und'][0]['nid']);
+        $weight = $temp->title;
+      }
+      $ind = '-';
+      if (!empty($n->field_advc_indications)) {
+        $terms = array();
+        foreach ($n->field_advc_indications['und'] AS $indication) {
+          $term = taxonomy_term_load($indication['tid']);
+          $terms[] = $term->name;
+        }
+        $ind = implode(', ', $terms);
+      }
+      $remarks = '-';
+      if (!empty($n->field_advc_remarks)) {
+        $remarks = truncate_utf8($n->field_advc_remarks['und'][0]['safe_value'], 100, TRUE, TRUE);
+      }
+      $dosage = '-';
+      if (!empty($n->field_advc_dsgs)) {
+        $dosages = array();
+        foreach ($n->field_advc_dsgs['und'] AS $dos) {
+          $temp = node_load($dos['nid']);
+          $dosages[] = $temp->title;
+        }
+        $dosage = implode(', ', $dosages);
+      }
+      $score = '';
+      $rows[] = array($age, $weight, $ind, $remarks, $dosage, $score);
+    }
+  }
+  return theme('table', array('header' => $header, 'rows' => $rows));
+}

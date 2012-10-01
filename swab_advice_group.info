@@ -1,0 +1,9 @@
+name = Advice Group
+description = Custom advice group form
+core = 7.x
+package = SWAB Custom Modules
+
+dependencies[] = references_dialog
+dependencies[] = clone
+
+files[] = advice_group.module

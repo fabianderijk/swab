@@ -1,0 +1,140 @@
+<?php
+
+
+/**
+ * Implements hook_menu().
+ */
+function swab_advice_group_menu() {
+  $items = array();
+  $items['node/add/advice_group_custom'] = array(
+    'title' => 'Add Advice Group',
+    'description' => 'Use this page to add an advice group.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('swab_advice_group_form'),
+    'access arguments' => array('create advice_group content'),
+  );
+  return $items;
+}
+
+function swab_advice_group_form() {
+  $form = array();
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Title'),
+    '#required' => TRUE,
+  );
+  $field = swab_advice_group_field_get_items('field_owner_regional');
+  $form['field_owner_regional'] = array(
+    '#type' => 'select',
+    '#title' => check_plain($field['label']),
+    '#description' => check_plain($field['description']),
+    '#options' => $field['values'],
+    '#required' => $field['required'],
+    '#weight' => $field['weight'],
+    '#default_value' => $field['default'],
+  );
+  $field = swab_advice_group_field_get_items('field_advc_type');
+  $form['field_advc_type'] = array(
+    '#type' => 'radios',
+    '#title' => check_plain($field['label']),
+    '#description' => check_plain($field['description']),
+    '#options' => $field['values'],
+    '#required' => $field['required'],
+    '#weight' => $field['weight'],
+    '#default_value' => $field['default'],
+  );
+  $field = swab_advice_group_field_get_items('field_advc_microbe');
+  $form['field_advc_microbe'] = array(
+    '#type' => 'select',
+    '#title' => check_plain($field['label']),
+    '#description' => check_plain($field['description']),
+    '#options' => $field['values'],
+    '#required' => $field['required'],
+    '#weight' => $field['weight'],
+    '#default_value' => $field['default'],
+  );
+  $field = swab_advice_group_field_get_items('field_advc_anatom');
+  $form['field_advc_anatom'] = array(
+    '#type' => 'select',
+    '#title' => check_plain($field['label']),
+    '#description' => check_plain($field['description']),
+    '#options' => $field['values'],
+    '#required' => $field['required'],
+    '#weight' => $field['weight'],
+    '#default_value' => $field['default'],
+  );
+  $field = swab_advice_group_field_get_items('field_advcg_advc');
+  $form['advices'] = array(
+    '#markup' => '<b>Show advices here!</b>',
+    '#weight' => $field['weight'],
+  );
+  $field = swab_advice_group_field_get_items('field_advcg_remarks');
+  $form['field_advcg_remarks'] = array(
+    '#type' => 'textarea',
+    '#title' => check_plain($field['label']),
+    '#description' => check_plain($field['description']),
+    '#options' => $field['values'],
+    '#required' => $field['required'],
+    '#weight' => $field['weight'],
+    '#default_value' => $field['default'],
+  );
+
+  return $form;
+}
+
+function swab_advice_group_field_get_items($field) {
+  $ret = array();
+
+  // get allowed values
+  $query = db_select('field_config', 'fc');
+  $query
+    ->condition('fc.field_name', $field)
+    ->fields('fc', array('data'));
+  $result = $query->execute();
+
+  foreach ($result AS $row) {
+    $data = unserialize($row->data);
+    if (isset($data['settings']['allowed_values'][0]['vocabulary'])) { // values come from vocabulary
+      $ret['values'] = array('_none' => t('- None -'));
+      $voc = swab_advice_group_get_vocabulary_by_name($data['settings']['allowed_values'][0]['vocabulary']);
+      $terms = taxonomy_get_tree($voc->vid);
+      foreach ($terms AS $term) {
+        $ret['values'][$term->tid] = $term->name;
+      }
+    }
+    else {
+      $ret['values'] = $data['settings']['allowed_values'];
+    }
+    break;
+  }
+
+  // get widget settings like label & description
+  $query = db_select('field_config_instance', 'fci');
+  $query
+    ->condition('fci.field_name', $field)
+    ->condition('fci.bundle', 'advice_group')
+    ->fields('fci', array('data'));
+  $result = $query->execute();
+
+  foreach ($result AS $row) {
+    $data = unserialize($row->data);
+    $ret['required'] = $data['required'];
+    $ret['description'] = $data['description'];
+    $ret['label'] = $data['label'];
+    $ret['weight'] = $data['widget']['weight'];
+    $ret['default'] = $data['default_value'];
+    break;
+  }
+
+  return $ret;
+}
+
+function swab_advice_group_get_vocabulary_by_name($vocabulary_name) {
+  $vocabs = taxonomy_get_vocabularies(NULL);
+  foreach ($vocabs as $vocab_object) {
+    if ($vocab_object->machine_name == $vocabulary_name) {
+      return $vocab_object;
+    }
+  }
+  return NULL;
+}
