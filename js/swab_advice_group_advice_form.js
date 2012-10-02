@@ -9,6 +9,7 @@
         $.getJSON(url, function(data) {
           $('#add-edit-advices-table').append(data.row);
           Drupal.tableDrag['add-edit-advices-table'].restripeTable();
+          Drupal.tableDrag['add-edit-advices-table'].initColumns();
           Drupal.tableDrag['add-edit-advices-table'].makeDraggable($('#add-edit-advices-table tr:last').get(0));
           button.removeAttr('disabled');
         });
@@ -25,10 +26,16 @@
           type: 'POST',
           data: data,
           dataType: 'JSON',
+          timeout: 2000,
           success: function(data) {
             if (data.success == 'true' && isInIframe()) {
               parent.Drupal.ReferencesDialog.close(null, 0, null);
               ajaxCall.abort();
+            }
+          },
+          error: function(jqXHR, textStatus, errorThrown) {
+            if (window.console && window.console.log) {
+              console.error(textStatus);
             }
           }
         });

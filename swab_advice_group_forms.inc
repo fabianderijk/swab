@@ -19,64 +19,95 @@ function swab_advice_group_add_advice_form($form, &$form_state) {
   $weight = swab_advice_group_field_get_items('field_advc_weight_ref', 'advice');
 
   $name = 'new_' . time();
-  $_SESSION[SWAB_ADVICE_GROUP_SESSION][$name] = $name;
-  foreach ($_SESSION[SWAB_ADVICE_GROUP_SESSION] AS $advice) {
-    $n = node_load($advice);
-    if (!empty($n) || $advice == $name) {
-      $age_default = '';
-      $weight_default = '';
-      if (!empty($n->field_advc_age_ref)) {
-        $age_default = $n->field_advc_age_ref['und'][0]['nid'];
+  if (!empty($_SESSION[SWAB_ADVICE_GROUP_SESSION])) {
+    foreach ($_SESSION[SWAB_ADVICE_GROUP_SESSION] AS $advice) {
+      $n = node_load($advice);
+      if (!empty($n) || $advice == $name) {
+        $age_default = '';
+        $weight_default = '';
+        if (!empty($n->field_advc_age_ref)) {
+          $age_default = $n->field_advc_age_ref['und'][0]['nid'];
+        }
+        if (!empty($n->field_advc_weight_ref)) {
+          $weight_default = $n->field_advc_weight_ref['und'][0]['nid'];
+        }
+        $form['advices'][$advice] = array(
+          'adv_age' => array(
+            '#type' => 'select',
+            '#description' => check_plain($age['description']),
+            '#options' => $age['values'],
+            '#required' => $age['required'],
+            '#default_value' => $age_default,
+          ),
+          'adv_weight' => array(
+            '#type' => 'select',
+            '#description' => check_plain($weight['description']),
+            '#options' => $weight['values'],
+            '#required' => $weight['required'],
+            '#default_value' => $weight_default,
+          ),
+          'adv_indication' => array(
+            '#markup' => 'Indication placeholder',
+          ),
+          'adv_remarks' => array(
+            '#markup' => 'Remarks placeholder',
+          ),
+          'adv_dosage' => array(
+            '#markup' => 'Dosage placeholder',
+          ),
+          'adv_score' => array(
+            '#markup' => 'Score placeholder',
+          ),
+          'weight' => array(
+            '#type' => 'weight',
+            '#title' => t('Weight'),
+            '#default_value' => 0,
+            '#delta' => 10,
+            '#title-display' => 'invisible',
+          ),
+        );
       }
-      if (!empty($n->field_advc_weight_ref)) {
-        $weight_default = $n->field_advc_weight_ref['und'][0]['nid'];
-      }
-      $form['advices'][$advice] = array(
-        'adv_age' => array(
-          '#type' => 'select',
-          '#description' => check_plain($age['description']),
-          '#options' => $age['values'],
-          '#required' => $age['required'],
-          '#default_value' => $age_default,
-        ),
-        'adv_weight' => array(
-          '#type' => 'select',
-          '#description' => check_plain($weight['description']),
-          '#options' => $weight['values'],
-          '#required' => $weight['required'],
-          '#default_value' => $weight_default,
-        ),
-        'adv_indication' => array(
-          '#markup' => 'Indication placeholder',
-        ),
-        'adv_remarks' => array(
-          '#markup' => 'Remarks placeholder',
-        ),
-        'adv_dosage' => array(
-          '#markup' => 'Dosage placeholder',
-        ),
-        'adv_score' => array(
-          '#markup' => 'Score placeholder',
-        ),
-        'weight' => array(
-          '#type' => 'weight',
-          '#title' => t('Weight'),
-          '#default_value' => 0,
-          '#delta' => 10,
-          '#title-display' => 'invisible',
-        ),
-      );
     }
   }
+
+  $form['advices'][$name] = array(
+    'adv_age' => array(
+      '#type' => 'select',
+      '#description' => check_plain($age['description']),
+      '#options' => $age['values'],
+      '#required' => $age['required'],
+    ),
+    'adv_weight' => array(
+      '#type' => 'select',
+      '#description' => check_plain($weight['description']),
+      '#options' => $weight['values'],
+      '#required' => $weight['required'],
+    ),
+    'adv_indication' => array(
+      '#markup' => 'Indication placeholder',
+    ),
+    'adv_remarks' => array(
+      '#markup' => 'Remarks placeholder',
+    ),
+    'adv_dosage' => array(
+      '#markup' => 'Dosage placeholder',
+    ),
+    'adv_score' => array(
+      '#markup' => 'Score placeholder',
+    ),
+    'weight' => array(
+      '#type' => 'weight',
+      '#title' => t('Weight'),
+      '#default_value' => 0,
+      '#delta' => 10,
+      '#title-display' => 'invisible',
+    ),
+  );
 
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['add_another'] = array( '#type' => 'submit', '#value' => t('Add another'));
   $form['actions']['submit'] = array( '#type' => 'submit', '#value' => t('Save Changes'));
   return $form;
-}
-
-function swab_advice_group_add_advice_add_another($form, &$form_state) {
-  $form_state['rebuild'] = TRUE;
 }
 
 /**
@@ -118,7 +149,6 @@ function theme_swab_advice_group_add_advice_form($variables) {
   $output .= drupal_render_children($form);
 
   drupal_add_tabledrag($table_id, 'order', 'sibling', 'add-edit-advices-weight');
-
   return $output;
 }
 
@@ -145,18 +175,19 @@ function swab_advice_group_add_advice_form_submit() {
         $n->nid = NULL;
         $n->type = 'advice';
         node_object_prepare($n);
-        $n->language = $language->language;
+        $n->language = LANGUAGE_NONE;
         $n->title = 'Advice: ' . format_date($n->created, 'custom', 'd-m-Y H:i:s');
-        $n = _swab_advice_group_update_field($n, 'field_advc_age_ref', $language->language, 'nid', $adv['adv_age']);
-        $n = _swab_advice_group_update_field($n, 'field_advc_weight_ref', $language->language, 'nid', $adv['adv_weight']);
+        $n = _swab_advice_group_update_field($n, 'field_advc_age_ref', LANGUAGE_NONE, 'nid', $adv['adv_age']);
+        $n = _swab_advice_group_update_field($n, 'field_advc_weight_ref', LANGUAGE_NONE, 'nid', $adv['adv_weight']);
       }
       node_save($n);
-      $advices[] = $n->nid;
+      if (!in_array($n->nid, $advices)) {
+        $advices[] = $n->nid;
+      }
     }
   }
   $_SESSION[SWAB_ADVICE_GROUP_SESSION] = $advices;
   print json_encode(array('success' => 'true'));
-  exit();
 }
 
 function _swab_advice_group_update_field($n, $field, $lang, $fieldname, $value) {
@@ -289,19 +320,30 @@ function swab_advice_group_forms_get_empty_row() {
 }
 
 function swab_advice_group_add_advice_form_row() {
-  $row = swab_advice_group_forms_get_empty_row();
-  $form['advices'] = array();
   $name = 'new_' . time();
+  $row = swab_advice_group_forms_get_empty_row();
+
+  $form['advices'] = array();
   $form['advices'][$name] = $row;
+  $form['advices'][$name]['weight']['#attributes']['class'] = array('add-edit-advices-weight');
+
   $ret = '<tr class="draggable">';
-  $ret .= '<td>' . drupal_render($form['advices'][$name]['adv_age']) . '</td>';
-  $ret .= '<td>' . drupal_render($form['advices'][$name]['adv_weight']) . '</td>';
-  $ret .= '<td>' . drupal_render($form['advices'][$name]['adv_indication']) . '</td>';
-  $ret .= '<td>' . drupal_render($form['advices'][$name]['adv_remarks']) . '</td>';
-  $ret .= '<td>' . drupal_render($form['advices'][$name]['adv_dosage']) . '</td>';
-  $ret .= '<td>' . drupal_render($form['advices'][$name]['adv_score']) . '</td>';
-  $ret .= '<td>' . drupal_render($form['advices'][$name]['weight']) . '</td>';
+  $ret .= '<td><div class="form-item form-type-select form-item-advices-' . str_replace('_', '-', $name) . '-adv-age"><select class="form-select" name="advices[' . $name . '][adv_age]" id="edit-advices-new-' . str_replace('_', '-', $name) . '-age">' . swab_advice_group_add_advice_form_row_options($form['advices'][$name]['adv_age']) . '</select></div></td>';
+  $ret .= '<td><div class="form-item form-type-select form-item-advices-' . str_replace('_', '-', $name) . '-adv-weight"><select class="form-select" name="advices[' . $name . '][adv_weight]" id="edit-advices-new-' . str_replace('_', '-', $name) . '-weight">' . swab_advice_group_add_advice_form_row_options($form['advices'][$name]['adv_weight']) . '</select></div></td>';
+  $ret .= '<td>Indication placeholder</td>';
+  $ret .= '<td>Remarks placeholder</td>';
+  $ret .= '<td>Dosage placeholder</td>';
+  $ret .= '<td>Score placeholder</td>';
+  $ret .= '<td><select name="advices[' . $name . '][weight]" id="edit-advices-' . str_replace('_', '-', $name) . '-weight" class="add-edit-advices-weight form-select"><option value="-10">-10</option><option value="-9">-9</option><option value="-8">-8</option><option value="-7">-7</option><option value="-6">-6</option><option value="-5">-5</option><option value="-4">-4</option><option value="-3">-3</option><option value="-2">-2</option><option value="-1">-1</option><option selected="selected" value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option></select></td>';
   $ret .= '</tr>';
   $json = array('row' => $ret);
   print json_encode($json);
+}
+
+function swab_advice_group_add_advice_form_row_options($row) {
+  $ret = '';
+  foreach ($row['#options'] AS $key => $opt) {
+    $ret .= '<option value="' . $key . '">' . $opt . '</option>';
+  }
+  return $ret;
 }
