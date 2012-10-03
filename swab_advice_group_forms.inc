@@ -347,3 +347,17 @@ function swab_advice_group_add_advice_form_row_options($row) {
   }
   return $ret;
 }
+
+function swab_advice_group_get_advice_form_item() {
+  $args = arg();
+  if (empty($args[3])) { // no post, show form
+    switch ($args[2]) {
+      case 'remarks':
+        break;
+    }
+  }
+  else { // do post
+
+  }
+  exit();
+}

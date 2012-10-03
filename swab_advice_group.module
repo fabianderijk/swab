@@ -1,15 +1,24 @@
 <?php
 
+// Define debug vars
 define('SWAB_ADVICE_GROUP_DEBUG', FALSE);
 define('SWAB_ADVICE_GROUP_DEBUG_SESSION', FALSE);
+
+// Define session name
 define('SWAB_ADVICE_GROUP_SESSION', 'swab_advice_group');
-define('SWAB_ADVICE_GROUP_ADVICE_PATH', 'admin/config/system/swab/add-edit-advices');
+
+// Define paths
+define('SWAB_ADVICE_GROUP_AJAX_PATH', 'ajax/swab_get_advice');
+define('SWAB_ADVICE_GROUP_AJAX_GET_ROW_PATH', 'ajax/swab_get_advice_row');
+define('SWAB_ADVICE_GROUP_AJAX_PUT_ROW_PATH', 'ajax/swab_put_advice_rows');
+define('SWAB_ADVICE_GROUP_AJAX_DROP_ROW_PATH', 'ajax/swab_drop_advice_rows');
+define('SWAB_ADVICE_GROUP_ADVICE_GET_FORM_ITEM', 'ajax/swab_get_advice_form_item');
+define('SWAB_ADVICE_GROUP_ADVICE_ADMIN_PATH', 'admin/config/system/swab/add-edit-advices');
 
 /**
  * Implements hook_init().
  */
 function swab_advice_group_init() {
-  // unset($_SESSION[SWAB_ADVICE_GROUP_SESSION]);
   if (SWAB_ADVICE_GROUP_DEBUG_SESSION) {
     $_SESSION[SWAB_ADVICE_GROUP_SESSION] = array(423, 430, 427, 426, 1000);
   }
@@ -19,32 +28,39 @@ function swab_advice_group_init() {
  */
 function swab_advice_group_menu() {
   $items = array();
-  $items['ajax/swab_get_advice'] = array(
+  $items[SWAB_ADVICE_GROUP_AJAX_PATH] = array(
     'title' => 'Ajax callback',
     'page callback' => 'swab_advice_group_get_advice',
     'access arguments' => array('swab advice group'),
   );
-  $items['ajax/swab_get_advice_row'] = array(
+  $items[SWAB_ADVICE_GROUP_AJAX_GET_ROW_PATH] = array(
     'title' => 'Ajax callback',
     'page callback' => 'swab_advice_group_add_advice_form_row',
     'access arguments' => array('swab advice group'),
     'file' => 'swab_advice_group_forms.inc',
     'type' => MENU_CALLBACK,
   );
-  $items['ajax/swab_put_advice_rows'] = array(
+  $items[SWAB_ADVICE_GROUP_AJAX_PUT_ROW_PATH] = array(
     'title' => 'Ajax callback',
     'page callback' => 'swab_advice_group_add_advice_form_submit',
     'access arguments' => array('swab advice group'),
     'file' => 'swab_advice_group_forms.inc',
     'type' => MENU_CALLBACK,
   );
-  $items['ajax/swab_drop_advice_rows'] = array(
+  $items[SWAB_ADVICE_GROUP_AJAX_DROP_ROW_PATH] = array(
     'title' => 'Ajax callback',
     'page callback' => 'swab_advice_group_drop_advice',
     'access arguments' => array('swab advice group'),
     'type' => MENU_CALLBACK,
   );
-  $items[SWAB_ADVICE_GROUP_ADVICE_PATH] = array(
+  $items[SWAB_ADVICE_GROUP_ADVICE_GET_FORM_ITEM] = array(
+    'title' => 'Ajax callback',
+    'page callback' => 'swab_advice_group_get_advice_form_item',
+    'access arguments' => array('swab advice group'),
+    'file' => 'swab_advice_group_forms.inc',
+    'type' => MENU_CALLBACK,
+  );
+  $items[SWAB_ADVICE_GROUP_ADVICE_ADMIN_PATH] = array(
     'title' => 'Add, edit or re-order advices',
     'description' => 'Use this page to change or add advices to the advice group.',
     'page callback' => 'drupal_get_form',
@@ -96,7 +112,7 @@ function swab_advice_group_change_form($form) {
     '#description' => check_plain($form['field_advcg_advc']['und']['#description']),
   );
   $form['advices']['table'] = array(
-    '#markup' => '<div id="swab-advice-table">' . swab_advice_group_get_advice_table() .'</div>',
+    '#markup' => '<div id="swab-advice-table">' . swab_advice_group_get_advice_table() . '</div>',
   );
   $form['advices']['add_link'] = array(
     '#markup' => l(t('Create, edit or re-order advices'), SWAB_ADVICE_GROUP_ADVICE_PATH, array('attributes' => array('class' => 'add-advice-dialog'))),
