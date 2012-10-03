@@ -1,6 +1,6 @@
 <?php
 
-define('SWAB_ADVICE_GROUP_DEBUG', TRUE);
+define('SWAB_ADVICE_GROUP_DEBUG', FALSE);
 define('SWAB_ADVICE_GROUP_DEBUG_SESSION', FALSE);
 define('SWAB_ADVICE_GROUP_SESSION', 'swab_advice_group');
 define('SWAB_ADVICE_GROUP_ADVICE_PATH', 'admin/config/system/swab/add-edit-advices');
@@ -73,6 +73,7 @@ function swab_advice_group_permission() {
 function swab_advice_group_form_alter(&$form, &$form_state, $form_id) {
   switch ($form_id) {
     case 'advice_group_node_form':
+      swab_advice_group_generate_session();
       $form = swab_advice_group_change_form($form);
       break;
   }
@@ -110,8 +111,16 @@ function swab_advice_group_get_advice() {
 }
 
 function swab_advice_group_submit($form, &$form_state) {
-  // var_dump($form_state);
-  // exit();
+  $form_state['values']['field_advcg_advc'] = array('und' => array('add_more' => t('Add another item')));
+  $i = 0;
+  foreach ($_SESSION[SWAB_ADVICE_GROUP_SESSION] AS $adv) {
+    $form_state['values']['field_advcg_advc']['und'][] = array(
+      'nid' => $adv,
+      '_weight' => $i,
+    );
+    $i++;
+  }
+  $_SESSION[SWAB_ADVICE_GROUP_SESSION] = array();
 }
 
 function swab_advice_group_theme() {
@@ -201,4 +210,14 @@ function swab_advice_group_drop_advice() {
   $_SESSION[SWAB_ADVICE_GROUP_SESSION] = $advices;
   $table = swab_advice_group_get_advice_table();
   print $table;
+}
+
+function swab_advice_group_generate_session() {
+  if (arg(0) == 'node' && is_numeric(arg(1))) {
+    $n = node_load(arg(1));
+    $_SESSION[SWAB_ADVICE_GROUP_SESSION] = array();
+    foreach ($n->field_advcg_advc['und'] AS $adv) {
+      $_SESSION[SWAB_ADVICE_GROUP_SESSION][] = $adv['nid'];
+    }
+  }
 }
