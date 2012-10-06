@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * @file
+ * The include file for the module
+ *
+ * This file holds some helper function used in the creation of the advice form.
+ */
+
 function swab_advice_group_field_get_items($field, $node_type = 'advice_group') {
   $ret = array();
 
@@ -80,4 +87,54 @@ function swab_advice_group_get_vocabulary_by_name($vocabulary_name) {
     }
   }
   return NULL;
+}
+
+function swab_advice_group_get_advices_from_group($node) {
+  $advices = array();
+  if (!empty($node->field_advcg_advc['und'])) {
+    foreach ($node->field_advcg_advc['und'] AS $advice) {
+      $advices[] = $advice['nid'];
+    }
+  }
+  return $advices;
+}
+
+function swab_advice_group_get_advices_from_advice($nid) {
+  $ret = array();
+  $n = node_load($nid);
+  if (!empty($n)) {
+    $ret['age'] = '';
+    if (!empty($n->field_advc_age_ref)) {
+      $ret['age'] = $n->field_advc_age_ref['und'][0]['nid'];
+    }
+    $ret['weight'] = '';
+    if (!empty($n->field_advc_weight_ref)) {
+      $ret['weight'] = $n->field_advc_weight_ref['und'][0]['nid'];
+    }
+    $ret['ind'] = '-';
+    if (!empty($n->field_advc_indications)) {
+      $terms = array();
+      foreach ($n->field_advc_indications['und'] AS $indication) {
+        $term = taxonomy_term_load($indication['tid']);
+        $terms[] = $term->name;
+      }
+      $ret['ind'] = implode(', ', $terms);
+    }
+    $ret['remarks'] = '-';
+    if (!empty($n->field_advc_remarks)) {
+      $ret['remarks'] = truncate_utf8($n->field_advc_remarks['und'][0]['safe_value'], 100, TRUE, TRUE);
+    }
+    $ret['dosage'] = '-';
+    if (!empty($n->field_advc_dsgs)) {
+      $dosages = array();
+      foreach ($n->field_advc_dsgs['und'] AS $dos) {
+        $temp = node_load($dos['nid']);
+        $dosages[] = $temp->title;
+      }
+      $ret['dosage'] = implode(', ', $dosages);
+    }
+    $ret['score'] = '';
+  }
+
+  return $ret;
 }

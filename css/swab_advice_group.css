@@ -1,2 +1,23 @@
-#swab-advice-table .swab-advice-group-row-delete { width: 16px; }
-#swab-advice-table .swab-advice-group-row-delete img { cursor: pointer; }
+.advice_group_fieldset {
+  margin: 0 0 5px 1em;
+  padding: 10px 5px 0;
+}
+
+.advice_group_table_header {
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.advice_group_table_row {
+  float: left;
+  overflow: hidden;
+  width: 94%;
+}
+.advice_group_table_row > div {
+  float: left;
+  padding: 5px !important;
+  width: 15%;
+}
+.page-node-add .advice_group_delete_button,
+.page-node-edit .advice_group_delete_button { width: 60px; margin: 10px 0 0; }
