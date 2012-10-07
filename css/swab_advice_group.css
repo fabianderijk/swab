@@ -17,7 +17,7 @@
 .advice_group_table_row > div {
   float: left;
   padding: 5px !important;
-  width: 15%;
+  width: 13%;
 }
 .page-node-add .advice_group_delete_button,
-.page-node-edit .advice_group_delete_button { width: 60px; margin: 10px 0 0; }
+.page-node-edit .advice_group_delete_button { width: 60px; margin: 15px 0 0; }

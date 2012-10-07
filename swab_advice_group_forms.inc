@@ -92,16 +92,19 @@ function swab_advice_group_get_vocabulary_by_name($vocabulary_name) {
 function swab_advice_group_get_advices_from_group($node) {
   $advices = array();
   if (!empty($node->field_advcg_advc['und'])) {
-    foreach ($node->field_advcg_advc['und'] AS $advice) {
-      $advices[] = $advice['nid'];
+    foreach ($node->field_advcg_advc['und'] AS $key => $advice) {
+      $advices[] = array(
+        'nid' => $advice['nid'],
+        'weight' => $key,
+      );
     }
   }
   return $advices;
 }
 
-function swab_advice_group_get_advices_from_advice($nid) {
+function swab_advice_group_get_advices_from_advice($advice) {
   $ret = array();
-  $n = node_load($nid);
+  $n = node_load($advice['nid']);
   if (!empty($n)) {
     $ret['age'] = '';
     if (!empty($n->field_advc_age_ref)) {
@@ -135,6 +138,37 @@ function swab_advice_group_get_advices_from_advice($nid) {
     }
     $ret['score'] = '';
   }
-
+  $ret['row_weight'] = $advice['weight'];
   return $ret;
 }
+
+function swab_advice_group_reformat_results($values) {
+  $results = array();
+  foreach ($values as $key => $value) {
+    $results[] = array(
+      'age' => $value['advice_group_' . $key]['advice_group_' . $key]['advice_group_' . $key . '_row']['adv_age_table_' . $key . '_row'],
+      'weight' => $value['advice_group_' . $key]['advice_group_' . $key]['advice_group_' . $key . '_row']['adv_weight_table_' . $key . '_row'],
+      'nid' => $value['advice_group_' . $key]['advice_group_' . $key]['advice_group_' . $key . '_row']['adv_nid_table_' . $key . '_row'],
+    );
+  }
+  return $results;
+}
+
+function swab_advice_group_update_field($n, $field, $lang, $fieldname, $value) {
+  if ($value != '_none') {
+    if (!empty($node->{$field})) {
+      $n->{$field}[$lang][0][$fieldname] = $value;
+    }
+    else {
+      $n->{$field} = array(
+        $lang => array(
+          array(
+            $fieldname => $value,
+          ),
+        ),
+      );
+    }
+  }
+  return $n;
+}
+
