@@ -21,3 +21,8 @@
 }
 .page-node-add .advice_group_delete_button,
 .page-node-edit .advice_group_delete_button { width: 60px; margin: 15px 0 0; }
+
+.indication-placeholder,
+.remarks-placeholder,
+.dosage-placeholder,
+.score-placeholder { font-size: 10px; }

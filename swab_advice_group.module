@@ -6,6 +6,22 @@ define('SWAB_ADVICE_GROUP_DEBUG', FALSE);
 // define field names
 define('SWAB_ADVICE_GROUP_AGE_FIELD', 'field_advc_age_ref');
 define('SWAB_ADVICE_GROUP_WEIGHT_FIELD', 'field_advc_weight_ref');
+define('SWAB_ADVICE_GROUP_INDICATION_FIELD', 'field_advc_indications');
+
+/**
+ * Implements hook_menu().
+ */
+function swab_advice_group_menu() {
+  $items = array();
+  $items['swab_advice_group/ind'] = array(
+    'title' => t('Indications'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('swab_advice_group_page'),
+    'access callback' => TRUE,
+    'file' => 'swab_advice_group_pages.inc',
+  );
+  return $items;
+}
 
 /**
  * Implements hook_form_FORM_ID_alter().
@@ -16,6 +32,9 @@ function swab_advice_group_form_advice_group_node_form_alter(&$form, &$form_stat
 
   // Load the css file
   drupal_add_css(drupal_get_path('module', 'swab_advice_group') . '/css/swab_advice_group.css');
+
+  swab_advice_group_include_references();
+  drupal_add_js(drupal_get_path('module', 'swab_advice_group') . '/js/swab_advice_group.js');
 
   $tree = array();
 
@@ -66,6 +85,9 @@ function swab_advice_group_form_advice_group_node_form_alter(&$form, &$form_stat
   // This variable will hold the current number of subforms
   if (empty($form_state['swab_advice_group_form_index'])) {
     $form_state['swab_advice_group_form_index'] = array(0);
+  }
+  if (empty($form_state['advice_group_index_mappings'])) {
+    $form_state['advice_group_index_mappings'] = array();
   }
   foreach ($form_state['swab_advice_group_form_index'] AS $index) {
     $form['adv_fieldset']['adv_group_form'][$index] = swab_advice_group_create_form($index, $tree, $form_state['advice_group_index_mappings'], $form_state);
@@ -144,8 +166,8 @@ function swab_advice_group_create_form($index, $tree, $mapping, $form_state) {
       // '#markup' => t('Sort order'),
   // );
 
-  $age = swab_advice_group_field_get_items('field_advc_age_ref', 'advice');
-  $weight = swab_advice_group_field_get_items('field_advc_weight_ref', 'advice');
+  $age = swab_advice_group_field_get_items(SWAB_ADVICE_GROUP_AGE_FIELD, 'advice');
+  $weight = swab_advice_group_field_get_items(SWAB_ADVICE_GROUP_WEIGHT_FIELD, 'advice');
 
   $form['advice_group_' . $index]['advice_group_' . $index]['advice_group_' . $index . '_row'] = advice_group_create_subform_table_row($index, $tree, $mapping, $form_state, $age, $weight);
 
@@ -178,20 +200,30 @@ function advice_group_create_subform_table_row($i, $tree, $mapping, $form_state,
 
   $default_age = '_none';
   $default_weight = '_none';
+  $default_indications = '';
+  $default_indications_tid = '';
   $default_row_weight = 0;
   $nid = 0;
 
-  if (!empty($tree[$mapping[$i]])) {
-    if (!empty($tree[$mapping[$i]]['age'])) {
-      $default_age = $tree[$mapping[$i]]['age'];
+  if (!empty($tree)) {
+    if (!empty($tree[$mapping[$i]])) {
+      if (!empty($tree[$mapping[$i]]['age'])) {
+        $default_age = $tree[$mapping[$i]]['age'];
+      }
+      if (!empty($tree[$mapping[$i]]['weight'])) {
+        $default_weight = $tree[$mapping[$i]]['weight'];
+      }
+      if (!empty($tree[$mapping[$i]]['row_weight'])) {
+        $default_row_weight = $tree[$mapping[$i]]['row_weight'];
+      }
+      if (!empty($tree[$mapping[$i]]['ind'])) {
+        $default_indications = $tree[$mapping[$i]]['ind'];
+      }
+      if (!empty($tree[$mapping[$i]]['ind_tid'])) {
+        $default_indications_tid = $tree[$mapping[$i]]['ind_tid'];
+      }
+      $nid = $mapping[$i];
     }
-    if (!empty($tree[$mapping[$i]]['weight'])) {
-      $default_weight = $tree[$mapping[$i]]['weight'];
-    }
-    if (!empty($tree[$mapping[$i]]['row_weight'])) {
-      $default_row_weight = $tree[$mapping[$i]]['row_weight'];
-    }
-    $nid = $mapping[$i];
   }
 
   $row['adv_nid_table_' . $i . '_row'] = array(
@@ -211,20 +243,24 @@ function advice_group_create_subform_table_row($i, $tree, $mapping, $form_state,
     '#required' => $weight['required'],
   );
   $row['adv_ind_table_' . $i . '_row'] = array(
-    '#type' => 'item',
-    '#markup' => 'Indication placeholder',
+    '#type' => 'hidden',
+    '#value' => $default_indications_tid,
+    '#prefix' => '<div class="indication-placeholder indication-placeholder-' . $i . '"><span class="inner">' . $default_indications .'</span> - ' . l(t('Edit indications'), 'swab_advice_group/ind/' . $i, array('attributes' => array('class' => 'advice-dialog'))) . '</div>',
+    '#attributes' => array(
+      'class' => array('indication-field-' . $i),
+    ),
   );
   $row['adv_rem_table_' . $i . '_row'] = array(
-    '#type' => 'item',
-    '#markup' => 'Remarks placeholder',
+    '#type' => 'hidden',
+    '#prefix' => '<div class="remarks-placeholder remarks-placeholder-' . $i . '"><span class="inner">Remarks placeholder</span></div>',
   );
   $row['adv_dos_table_' . $i . '_row'] = array(
-    '#type' => 'item',
-    '#markup' => 'Dosage placeholder',
+    '#type' => 'hidden',
+    '#prefix' => '<div class="dosage-placeholder dosage-placeholder-' . $i . '"><span class="inner">Dosage placeholder</span></div>',
   );
   $row['adv_score_table_' . $i . '_row'] = array(
     '#type' => 'item',
-    '#markup' => 'Score placeholder',
+    '#markup' => '<div class="score-placeholder score-placeholder-' . $i . '">Score placeholder</div>',
     '#attributes' => array('class' => array('adv_sc_item')),
   );
   // $row['adv_row_weight_table_' . $i] = array(
@@ -261,16 +297,24 @@ function swab_advice_group_form_submit_handler($form, &$form_state) {
       $n->title = 'Advice: ' . format_date($n->created, 'custom', 'd-m-Y H:i:s');
       $n = swab_advice_group_update_field($n, SWAB_ADVICE_GROUP_AGE_FIELD, LANGUAGE_NONE, 'nid', $result['age']);
       $n = swab_advice_group_update_field($n, SWAB_ADVICE_GROUP_WEIGHT_FIELD, LANGUAGE_NONE, 'nid', $result['weight']);
+      if (!empty($result['indication'][0]['tid'])) {
+        $n = swab_advice_group_update_field($n, SWAB_ADVICE_GROUP_INDICATION_FIELD, LANGUAGE_NONE, 'tid', $result['indication']);
+      }
     }
     else {
       // update node
       $n = node_load($result['nid']);
       $n = swab_advice_group_update_field($n, SWAB_ADVICE_GROUP_AGE_FIELD, $n->language, 'nid', $result['age']);
       $n = swab_advice_group_update_field($n, SWAB_ADVICE_GROUP_WEIGHT_FIELD, $n->language, 'nid', $result['weight']);
+      if (!empty($result['indication'][0]['tid'])) {
+        $n = swab_advice_group_update_field($n, SWAB_ADVICE_GROUP_INDICATION_FIELD, $n->language, 'tid', $result['indication']);
+      }
     }
+
     node_save($n);
     $advices[] = $n->nid;
   }
+
   $form_state['values']['field_advcg_advc'] = array('und' => array('add_more' => t('Add another item')));
   foreach ($advices AS $key => $advice) {
     $form_state['values']['field_advcg_advc']['und'][] = array(

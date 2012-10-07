@@ -4,5 +4,7 @@ core = 7.x
 package = SWAB Custom Modules
 
 dependencies[] = clone
+dependencies[] = improved_multi_select
+dependencies[] = references_dialog
 
 files[] = advice_group.module

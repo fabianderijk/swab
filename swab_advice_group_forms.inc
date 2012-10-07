@@ -82,7 +82,7 @@ function swab_advice_group_add_none_to_values($arr, $key, $val) {
 function swab_advice_group_get_vocabulary_by_name($vocabulary_name) {
   $vocabs = taxonomy_get_vocabularies(NULL);
   foreach ($vocabs as $vocab_object) {
-    if ($vocab_object->name == $vocabulary_name) {
+    if ($vocab_object->machine_name == $vocabulary_name) {
       return $vocab_object;
     }
   }
@@ -114,16 +114,20 @@ function swab_advice_group_get_advices_from_advice($advice) {
     if (!empty($n->field_advc_weight_ref)) {
       $ret['weight'] = $n->field_advc_weight_ref['und'][0]['nid'];
     }
-    $ret['ind'] = '-';
+    $ret['ind'] = '';
+    $ret['ind_tid'] = '';
     if (!empty($n->field_advc_indications)) {
       $terms = array();
+      $tids = array();
       foreach ($n->field_advc_indications['und'] AS $indication) {
         $term = taxonomy_term_load($indication['tid']);
         $terms[] = $term->name;
+        $tids[] = $indication['tid'];
       }
       $ret['ind'] = implode(', ', $terms);
+      $ret['ind_tid'] = implode(',', $tids);
     }
-    $ret['remarks'] = '-';
+    $ret['remarks'] = '';
     if (!empty($n->field_advc_remarks)) {
       $ret['remarks'] = truncate_utf8($n->field_advc_remarks['und'][0]['safe_value'], 100, TRUE, TRUE);
     }
@@ -145,30 +149,62 @@ function swab_advice_group_get_advices_from_advice($advice) {
 function swab_advice_group_reformat_results($values) {
   $results = array();
   foreach ($values as $key => $value) {
+    $indications = array();
+    $indication_explode = explode(',', $value['advice_group_' . $key]['advice_group_' . $key]['advice_group_' . $key . '_row']['adv_ind_table_' . $key . '_row']);
+    if (!empty($indication_explode)) {
+      foreach ($indication_explode AS $i) {
+        $indications[] = array('tid' => $i);
+      }
+    }
     $results[] = array(
       'age' => $value['advice_group_' . $key]['advice_group_' . $key]['advice_group_' . $key . '_row']['adv_age_table_' . $key . '_row'],
       'weight' => $value['advice_group_' . $key]['advice_group_' . $key]['advice_group_' . $key . '_row']['adv_weight_table_' . $key . '_row'],
+      'indication' => $indications,
       'nid' => $value['advice_group_' . $key]['advice_group_' . $key]['advice_group_' . $key . '_row']['adv_nid_table_' . $key . '_row'],
     );
   }
   return $results;
 }
 
-function swab_advice_group_update_field($n, $field, $lang, $fieldname, $value) {
+function swab_advice_group_update_field($n, $field, $lang, $fieldname = '', $value = '') {
   if ($value != '_none') {
     if (!empty($node->{$field})) {
-      $n->{$field}[$lang][0][$fieldname] = $value;
+      if (is_array($value)) {
+        foreach ($value  AS $val) {
+          $n->{$field}[$lang][] = $val;
+        }
+      }
+      else {
+        $n->{$field}[$lang][0][$fieldname] = $value;
+      }
     }
     else {
-      $n->{$field} = array(
-        $lang => array(
-          array(
-            $fieldname => $value,
+      if (is_array($value)) {
+        $n->{$field}[$lang] = array();
+        foreach ($value  AS $val) {
+          $n->{$field}[$lang][] = $val;
+        }
+      }
+      else {
+        $n->{$field} = array(
+          $lang => array(
+            array(
+              $fieldname => $value,
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
   }
   return $n;
 }
 
+function swab_advice_group_include_references() {
+  $reference_includes = references_dialog_attached();
+  foreach ($reference_includes['js'] AS $js) {
+    drupal_add_js($js);
+  }
+  foreach ($reference_includes['css'] AS $css) {
+    drupal_add_css($css);
+  }
+}
