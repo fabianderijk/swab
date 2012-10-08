@@ -245,7 +245,7 @@ function advice_group_create_subform_table_row($i, $tree, $mapping, $form_state,
   $row['adv_ind_table_' . $i . '_row'] = array(
     '#type' => 'hidden',
     '#value' => $default_indications_tid,
-    '#prefix' => '<div class="indication-placeholder indication-placeholder-' . $i . '"><span class="inner">' . $default_indications .'</span> - ' . l(t('Edit indications'), 'swab_advice_group/ind/' . $i, array('attributes' => array('class' => 'advice-dialog'))) . '</div>',
+    '#prefix' => '<div class="indication-placeholder indication-placeholder-' . $i . '"><span class="inner">' . $default_indications .'</span> - ' . l(t('Edit indications'), 'swab_advice_group/ind/' . $i, array('query' => array('tids' => $default_indications_tid), 'attributes' => array('class' => 'advice-dialog'))) . '</div>',
     '#attributes' => array(
       'class' => array('indication-field-' . $i),
     ),

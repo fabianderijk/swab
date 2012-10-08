@@ -15,13 +15,19 @@ function swab_advice_group_page($form, &$form_state) {
   $args = arg();
   switch ($args[1]) {
     case 'ind':
+      $default_tids = array();
+      if (isset($_GET['tids']) && !empty($_GET['tids'])) {
+        $default_tids = explode(',', $_GET['tids']);
+      }
+
       $field = swab_advice_group_field_get_items('field_advc_indications');
       $form['indications'] = array(
         '#type' => 'select',
         '#title' => t('Indications'),
         '#multiple' => TRUE,
         '#options' => $field['values'],
-        '#title_display' => 'invisible'
+        '#title_display' => 'invisible',
+        '#default_value' => $default_tids,
       );
       $form['row'] = array(
         '#type' => 'hidden',
